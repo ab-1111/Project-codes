@@ -1,4 +1,4 @@
-# Jenkins CICD Pipeline : Create Docker image and Pull image from DockerHub repo and Create Container.
+# Jenkins CICD Pipeline : Create Docker image and Pull image from DockerHub repo and Create Container
 
 Requirements:
 1.GitHub
