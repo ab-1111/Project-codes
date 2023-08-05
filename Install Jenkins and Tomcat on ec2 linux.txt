@@ -1,0 +1,41 @@
+-----TOMCAT----------
+1. create instance having security grp open with 8080 port
+2. Install java open-jdk-11 package
+# amazon-linux-extras install java-openjdk11
+# yum install java-11-openjdk-devel
+# amazon-linux-extras install epel
+3. download tomcat .tar.gz file
+# curl -O https://dlcdn.apache.org/tomcat/tomcat-8/v8.5.90/bin/apache-tomcat-8.5.90.tar.gz
+4. Extract that file in /opt
+# tar xvzf apache-tomcat-8.5.90.tar.gz -C /opt
+5. go to tomcat file directory
+# ./bin/catalina.sh start
+6. Now hit the public ip on google along with 8080 port
+ip:8080
+7. tomcat page shown.
+
+
+------JENKINS----------
+create another instance having jenkins
+1. create instance having security grp open with 8080 port
+2. install java platform req.
+# amazon-linux-extras install java-openjdk11
+# yum install java-11-openjdk-devel -y
+also install git
+# yum install git -y
+3. To download jenkins, first download its repository from official jenkins site
+# wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+# rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+# systemctl daemon-reload
+# yum install jenkins -y
+# systemctl enable jenkins
+# systemctl start jenkins
+# systemctl status jenkins
+4. Now hit the public ip on google along with 8080 port
+ip:8080
+5. enter password from
+# cat /var/lib/jenkins/secrets/initialAdminPassword
+6. started the jenkins server
+7. download plugin 
+-->deploy to container
+

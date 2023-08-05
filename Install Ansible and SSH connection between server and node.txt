@@ -1,0 +1,196 @@
+1. Create 3 instances --> 1-ansible, 2-node-1, 3-node-2
+
+2. take ssh of all instances.
+
+3. Download epel package
+>sudo amazon-linux-extras install epel -y
+>wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+> ls
+> yum install epel-release-latest-7.noarch.rpm -y
+> yum update -y
+
+4. Install req packages
+> yum install git python python-level python-pip ansible openssl -y
+> ansible --version
+
+5. Create group under hosts
+vim /etc/ansible/hosts
+------------------------------------------------------------
+# Ex 1: Ungrouped hosts, specify before any group headers.
+
+[demo]
+172.31.41.142
+172.31.47.42
+
+## green.example.com
+## blue.example.com
+## 192.168.100.1
+## 192.168.100.10
+
+# Ex 2: A collection of hosts belonging to the 'webservers' group
+-----------------------------------------------------------------
+In above file we created group "demo" and put private ip address of node-1 and node-2 instances.
+
+6. configure that group and activate in .cfg file
+vim /etc/ansible/ansible.cfg
+-------------------------------------------------------
+[defaults]
+
+# some basic default values...
+
+inventory      = /etc/ansible/hosts
+#library        = /usr/share/my_modules/
+#module_utils   = /usr/share/my_module_utils/
+#remote_tmp     = ~/.ansible/tmp
+#local_tmp      = ~/.ansible/tmp
+#plugin_filters_cfg = /etc/ansible/plugin_filters.yml
+#forks          = 5
+#poll_interval  = 15
+sudo_user      = root
+#ask_sudo_pass = True
+#ask_pass      = True
+#transport      = smart
+#remote_port    = 22
+-------------------------------------------------------
+we simple remove "#" of inventory and sudo_user line to configure them and activate. 
+
+7. create user
+>adduser ansible
+>passwd ansible
+enter password (akshay) and enter. 
+
+8.create same user on both node 1 and 2
+>adduser ansible
+>passwd ansible
+enter password (akshay) and enter.
+
+9. >su - ansible (on all instances)
+create file but we can not install any packages. 
+For that we give it sudo priviliges.
+>exit
+
+10. >visudo
+------------------------------------------------------
+Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin
+
+## Next comes the main part: which users can run what software on
+## which machines (the sudoers file can be shared between multiple
+## systems).
+## Syntax:
+##
+##      user    MACHINE=COMMANDS
+##
+## The COMMANDS section may have other options added to it.
+##
+## Allow root to run any commands anywhere
+root    ALL=(ALL)       ALL
+ansible ALL=(ALL) NOPASSWD: ALL
+
+## Allows members of the 'sys' group to run networking, software,
+## service management apps and more.
+-------------------------------------------------------------
+ENTER new user ansible below the row root and give it root permissions.
+
+11. Do above work (step-10) in all nodes (instances)
+> exit and enter > visudo
+
+12. on ansible terminal
+> su - ansible
+> sudo yum install httpd -y
+
+13. on all node 1 and 2
+> su - ansible
+
+14. on ansible terminal,
+For ssh access of nodes
+> exit from ansible user
+> vi /etc/ssh/sshd_config
+Do 3 changes
+1- uncomment permitrootlogin
+------------------------------------------------------
+# Authentication:
+
+#LoginGraceTime 2m
+PermitRootLogin yes
+#StrictModes yes
+#MaxAuthTries 6
+#MaxSessions 10
+--------------------------------------------
+2- uncomment passwordAuthentication yes and 
+3- comment passwordAuthentication no
+---------------------------------------------------
+# To disable tunneled clear text passwords, change to no here!
+PasswordAuthentication yes
+#PermitEmptyPasswords no
+#PasswordAuthentication no
+-----------------------------------------------------
+
+15. Do this same work (step-14) on both nodes 1 and 2
+exit from ansible user and enter
+>vi /etc/ssh/sshd_config
+
+16. on all terminal
+> service sshd restart
+> su - ansible
+
+17. on ansible terminal for taking ssh of node-1 and node-2
+> ssh <private_ip of node-1>
+> ssh <private_ip of node-2>
+
+18. For passwordless authentication we have to generate key.
+First we have to enter ansible user on all terminals as key work on same level user.
+> su - ansible (on all terminals)
+> ssh-keygen (on ansible terminal)
+> ls
+> cd .ssh
+
+19. Copy public key on all nodes
+> ssh-copy-id ansible@<node-1_ip>
+> ssh-copy-id ansible@<node-2_ip>
+
+20. To check all hosts list
+> ansible all --list-hosts
+To check specific group (demo) host list
+> ansible demo --list-hosts
+
+To check only first node of group (demo)-->
+> ansible demo[0] --list-hosts
+
+-----------------------------------
+[0] --> 1st node
+[1] --> 2nd node and so on
+[1:5] --> to check nodes from range 2 to 6
+[-1] --> for last host
+[-2] --> for 2nd last
+---------------------------------------------
+
+
+=====================================================================
+Module Command:-->
+To install httpd service,
+$ ansible demo -b -m service -a "name=httpd state=present"
+where,
+demo --> group name
+-b --> for sudo privilage
+-m --> module
+-a --> argument
+state: present--> install, absent--> remove, latest --> update
+To check status, 
+$ sudo service hhtpd status
+
+To add user:-
+$ ansible demo -b -m user -a "name=akshay"
+In that akshay user will be created in all nodes of demo group.
+(i.e. user is created in node 1 as well as in node 2).
+To check user:-
+$ cat /etc/passwd
+
+Copy the file from server to a last node of group demo:-
+$ ansible demo[-1] -b -m copy -a "src=file1 dest=/opt"
+
+To check all information about all nodes of group:
+$ ansible demo -m setup
+
+To check only ip address of nodes of group demo:-
+$ ansible demo -m setup -a "filter=*ipv4*"
+

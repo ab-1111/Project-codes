@@ -1,0 +1,88 @@
+     #  Prerequesists for installation
+=============================================================
+
+yum install epel-release unzip vim -y
+yum install wget -y
+
+required belsoft java for sonarqube and download it
+wget https://download.bell-sw.com/java/11.0.4/bellsoft-jdk11.0.4-linux-amd64.rpm
+
+Required normal java to get dependencies req. for belsoft java
+yum install  java -y
+rpm -ivh bellsoft-jdk11.0.4-linux-amd64.rpm
+java --version
+(shows bellsoft java package)
+
+For req. database server, install mysql or mariadb (any 1)-->
+    #Mysql Configuration
+===============================
+rpm -ivh http://repo.mysql.com/mysql57-community-release-el7.rpm
+yum install mysql-server -y
+
+Now set buffer memory req. for sonarqube -->
+
+echo 'vm.max_map_count=262144' >/etc/sysctl.conf
+sysctl -p
+echo '* - nofile 80000' >>/etc/security/limits.conf
+sed -i -e '/query_cache_size/ d' -e '$ a query_cache_size = 15M' /etc/my.cnf
+systemctl start mysqld
+grep 'password' /var/log/mysqld.log
+
+[after hiting above command, at last after localhost: 
+there is password given which will be enter after installation, 
+(after below command)] 
+
+mysql_secure_installation
+(after adding new password, simply enter all the things that is skip all)
+
+mysql -p -u root  =====> {mysql -u root -pRedhat@123}  -->Redhat@123 is our new password as we enter above.
+
+create database sonarqube;
+create user 'sonarqube'@'localhost' identified by 'Akshay@123'; 
+grant all privileges on sonarqube.* to 'sonarqube'@'localhost';
+flush privileges;
+
+    #Installation of sonarqube
+========================================
+
+wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-7.9.1.zip
+unzip sonarqube-7.9.1.zip
+mv sonarqube-7.9.1 /opt/sonarqube
+cd /opt/
+mv sonarqube sonar
+
+    #configuration file == [ /conf/sonar.properties ]
+===================================================
+
+sed -i -e '/^sonar.jdbc.username/ d' -e '/^sonar.jdbc.password/ d' -e '/^sonar.jdbc.url/ d' -e '/^sonar.web.host/ d' -e '/^sonar.web.port/ d' /opt/sonar/conf/sonar.properties
+sed -i -e '/#sonar.jdbc.username/ a sonar.jdbc.username=sonarqube' -e '/#sonar.jdbc.password/ a sonar.jdbc.password=Akshay@123' -e '/InnoDB/ a sonar.jdbc.url=jdbc.mysql://localhost:3306/sonarqube?useUnicode=true&characterEncoding=utf&rewriteBatchedStatements=true&useConfigs=maxPerformance' -e '/#sonar.web.host/ a sonar.web.host=0.0.0.0' /opt/sonar/conf/sonar.properties
+
+useradd sonar
+chown sonar:sonar /opt/sonar/ -R
+sed -i -e '/^#RUN_AS_USER/ c RUN_AS_USER=sonar' /opt/sonar/bin/linux-x86-64/sonar.sh
+
+     #to start sonarqube  
+======================================
+/opt/sonar/bin/linux-x86-64/sonar.sh start
+
+    #to show status
+=================================
+/opt/sonar/bin/linux-x86-64/sonar.sh status 
+
+[check status multiple time as service start once but after sometime it may be stopped.
+To avoid that, check status multiple times.]
+
+     #to get logs
+==========================
+less logs/sonar.log
+
+vim /opt/sonar/bin/linux-x86-64/sonar.sh
+vim /opt/sonar/conf/wrapper.conf
+alternatives --config java    -->To check path of java/bellsoft java
+vim /opt/sonar/conf/wrapper.conf
+
+Now hit the public ip on google as <ip>:9000
+Default port no. of sonaqube is 9000.
+
+user: admin   password: admin
+
