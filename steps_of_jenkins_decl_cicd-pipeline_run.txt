@@ -1,0 +1,156 @@
+Requirements:
+1.GitHub
+2.Docker
+3.DockerHub
+4.EC2 instance
+5.Jenkins
+
+Steps:
+1. Create a EC2 instance having sg contain SSH, port 8080 and port 8000
+2. Take ssh of ec2 instance
+3. download repository from github
+	>git clone https://github.com/ab-1111/repo1
+	>cd repo1
+4. Update libraries and install docker
+	>sudo apt-get update
+	>sudo apt install docker.io
+	>docker --version
+5. Give permission to user to access docker
+	>whoami  ---> check username
+	>sudo usermod -aG docker $USER
+	>sudo reboot
+	>docker ps
+6. Create Dockerfile if not on github repository
+	>cat Dockerfile
+		FROM python:3.9
+		
+		WORKDIR /app/backend
+		
+		COPY requirements.txt /app/backend
+		RUN pip install -r requirements.txt
+		
+		COPY . /app/backend
+		
+		EXPOSE 8000
+		
+		CMD python /app/backend/manage.py runserver 0.0.0.0:8000
+
+7. Build dockerfile
+	>docker build -t notes-app .
+	
+8. Install java and jenkins
+	>sudo apt install openjdk-17-jre
+	>java -version
+	>curl -fsSL https://pkg.jenkins.io/&&&&&&&&&&&
+	>service jenkins status
+9. To check jenkins server copy public ip of ec2 instance
+	>> ip:8080/
+Enter password to jenkins from 
+	>sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+Open jenkins with plugins
+Create admin and password
+Jenkins started.
+
+10. Create job with pipeline
+	>> click on GitHub project and enyer project URL
+	>> display name- Notes app
+	>> pipeline
+	Script:-
+		pipeline {
+			agents any
+			
+			stages{
+				stage("code"){
+					steps {
+						echo "Cloning the code"
+						git url:"https://github.com/ab-1111/notes-app.git", branch:"main"
+					}	
+				}
+				stage("build"){
+					steps {
+						echo "Building the code"
+						sh "docker build -t my-note-app ."
+					}
+				}
+				stage("push to docker hub"){
+					steps {
+						echo "pushing the image to dockerhub"
+						withCredentials([usernamePassword(credentialsId:"dockerHub",passwordVariable:"dockerHubPass",usernameVariable:"dockerHubUser")])
+						sh "docker tag my-note-app ${env.dockerHubUser}/my-note-app:latest"
+						sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPass}"
+						sh "docker push ${env.dockerHubUser}/my-note-app:latest"
+					}
+				}
+				stage("deploy"){
+					steps {
+						echo "Deploying the container"
+						sh "docker-compose down && docker-compose up -d"
+						
+					}
+				}
+			}
+		}
+		
+		
+11. Append user jenbkins to group docker
+	>sudo usermod -aG docker jenkins
+	>sudo reboot
+	
+12. Login to dockerhub
+	>docker login
+	--> enter userid and password and login.
+	
+13. For environment variables, go to manage jenkins
+	>> credentials >> add credentials
+	>> enter username and password and create ID --> dockerHub (use any name)
+	
+14. Now copy the public ip of ec2 instance and search on web as:
+			>> ip:8000   ----> your page will shown here
+-----------------------------------------------------------------------------
+pipeline:
+				stage("deploy"){
+					steps {
+						echo "Deploying the container"
+					  	sh "docker run -d -p 8000:8000 ab0207/my-note-app:latest"
+	--> above command give the error of port is already allocated 
+	when we build the pipeline multiple times.
+						}
+				}
+----------------------------------------------------------------------------------			
+15. To solve the error: port is already allocated, we install docker compose
+	>sudo apt-get install docker-compose
+	
+	>cat docker-compose.yml
+	
+			version : "3.3"
+			services :
+				web : 
+					build : .
+					ports : 
+						- "8000:8000"
+
+16. Also change in docker-compose file for multiple build,
+	Replace build with image:
+	
+			version : "3.3"
+			services :
+				web : 
+					image : ab0207/my-note-app:latest
+					ports : 
+						- "8000:8000"
+						
+17. Now copy entire pipeline from script box and paste it on github name as 'jenkinsfile'
+	and commit it.
+
+***DECLARATIVE CHECKOUT :--
+
+18. Now use option pipeline script from SCM instead of script
+	SCM : GitHub
+	URL: https://github.com/ab-1111/notes-app.git
+	branch: main / master
+	
+19. For automation of pipeline, we use webhooks:
+	--> Go to your repo on github >> settings >> webhooks >> add webhook >> 
+		payload url--> jenkins url/github-webhook/ and click on send me  everything >> Save.
+		
+20. Now if any changes occur in build file on github, jenkins build will automatically run.
