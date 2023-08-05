@@ -92,7 +92,7 @@ Jenkins started.
 		}
 		
 		
-11. Append user jenbkins to group docker
+11. Append user jenkins to group docker
 	>sudo usermod -aG docker jenkins
 	>sudo reboot
 	
@@ -105,7 +105,7 @@ Jenkins started.
 	>> enter username and password and create ID --> dockerHub (use any name)
 	
 14. Now copy the public ip of ec2 instance and search on web as:
-			>> ip:8000   ----> your page will shown here
+			>> ip:8000  ----> your page will shown here
 -----------------------------------------------------------------------------
 pipeline:
 				stage("deploy"){
@@ -117,7 +117,7 @@ pipeline:
 						}
 				}
 ----------------------------------------------------------------------------------			
-15. To solve the error: port is already allocated, we install docker compose
+15. To solve the error: port is already allocated, we install docker compose:
 	>sudo apt-get install docker-compose
 	
 	>cat docker-compose.yml
